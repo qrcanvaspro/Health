@@ -1,0 +1,7 @@
+{
+  "name": "Manish Yadav Health - AI Care",
+  "description": "A premium AI-powered medical assistant and medicine tracker designed for personal health management with bilingual support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
