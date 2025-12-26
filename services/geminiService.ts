@@ -5,7 +5,7 @@ import { MedicineDetails, Language } from "../types";
 export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    console.error("Critical: API Key is missing. Check your environment variables or vite.config.ts.");
+    console.error("Critical: API Key is missing.");
     return null;
   }
 
@@ -13,7 +13,10 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Provide complete and accurate medical details for "${name}" in ${lang === Language.HI ? 'Hindi' : 'English'}. Include scientific composition and common side effects. Format the output as a valid JSON object.`,
+      contents: `You are a Senior Clinical Pharmacist at Manish Yadav MedCenter. Provide exhaustive clinical data for "${name}". 
+      LANGUAGE REQUIREMENT: Respond ONLY in ${lang === Language.HI ? 'Pure Formal Hindi (Devanagari script)' : 'Formal Medical English'}. 
+      STRICTLY FORBIDDEN: Do not use mixed "Hinglish" or English words in Hindi text unless it's a specific scientific unit.
+      Format the output as a valid JSON object.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -31,10 +34,7 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     });
 
     const text = response.text;
-    if (!text) {
-      console.warn("No text returned from Gemini API");
-      return null;
-    }
+    if (!text) return null;
     return JSON.parse(text) as MedicineDetails;
   } catch (error) {
     console.error("AI Medicine Explorer Error:", error);
@@ -44,7 +44,7 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
 
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API configuration error. Please set the API_KEY.";
+  if (!apiKey) return "API configuration error.";
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -55,17 +55,19 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `You are the premium health assistant for "Manish Yadav Health". 
-        Address the user as "User" or "Aap". 
-        Language: ${lang === Language.HI ? 'Hindi' : 'English'}.
-        Provide expert, empathetic advice. 
-        Always include a disclaimer that this is AI-generated advice and they should consult a doctor.`,
+        systemInstruction: `You are the Lead Medical Consultant at "Manish Yadav MedCenter". 
+        TONE: Highly professional, clinical, and reassuring. 
+        LANGUAGE POLICY: 
+        1. If language is Hindi: Use ONLY Pure Formal Hindi. No English words or sentences. Use Devanagari script. 
+        2. If language is English: Use Professional Medical English.
+        STRUCTURE: Use professional formatting with clear sections like [Consultation Summary], [Recommendations], and [Precautionary Advice].
+        DISCLAIMER: Always emphasize that this is AI support and a physical doctor visit is essential.`,
       }
     });
 
-    return response.text || "I'm sorry, I encountered an issue processing your request.";
+    return response.text || "I apologize, but I am unable to process your request at this time.";
   } catch (error) {
     console.error("AI Assistant Error:", error);
-    return "The system is currently busy or configured incorrectly. Please check the API key.";
+    return "The system is currently undergoing maintenance. Please try again later.";
   }
 };

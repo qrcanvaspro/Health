@@ -17,12 +17,10 @@ const App: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const t = TRANSLATIONS[lang];
 
-  // Logic to handle language toggle with a specific message injection for the AI assistant
   const toggleLanguage = () => {
     const nextLang = lang === Language.EN ? Language.HI : Language.EN;
     setLang(nextLang);
     
-    // Auto-inject a greeting message in the history when language changes
     const greeting: ChatMessage = {
       role: 'model',
       text: TRANSLATIONS[nextLang].langSwitchGreeting
@@ -54,11 +52,11 @@ const App: React.FC = () => {
       <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col p-6 sticky top-0 h-screen z-40">
         <div className="flex items-center gap-3 mb-10">
           <div className="w-10 h-10 bg-teal-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-teal-100">
-            MY
+            MC
           </div>
           <div>
-            <h1 className="font-bold text-slate-800 text-lg leading-tight">Health</h1>
-            <p className="text-xs text-slate-400 font-medium tracking-wide">Premium AI Care</p>
+            <h1 className="font-bold text-slate-800 text-lg leading-tight">MedCenter</h1>
+            <p className="text-xs text-slate-400 font-medium tracking-wide">Elite AI Healthcare</p>
           </div>
         </div>
 
@@ -87,7 +85,7 @@ const App: React.FC = () => {
               <User size={20} />
             </div>
             <div>
-              <p className="text-[10px] opacity-70 font-bold uppercase tracking-wider">Premium User</p>
+              <p className="text-[10px] opacity-70 font-bold uppercase tracking-wider">Premium Access</p>
               <p className="text-sm font-bold">Manish Yadav</p>
             </div>
           </div>
@@ -97,8 +95,8 @@ const App: React.FC = () => {
       {/* Header - Mobile */}
       <header className="md:hidden glass-morphism sticky top-0 z-50 px-4 py-4 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-2" onClick={() => setActiveTab('home')}>
-          <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-teal-50">MY</div>
-          <h1 className="font-bold text-slate-800">Health AI</h1>
+          <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-teal-50">MC</div>
+          <h1 className="font-bold text-slate-800">MedCenter</h1>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -118,11 +116,11 @@ const App: React.FC = () => {
         <div className="mb-8 flex justify-between items-end">
           <div>
             <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t.welcome}</h2>
-            <p className="text-slate-500 mt-2 font-medium">Personalized AI diagnostics & healthcare management.</p>
+            <p className="text-slate-500 mt-2 font-medium">Advanced medical consultation & healthcare management.</p>
           </div>
           <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-xs font-bold text-green-700 uppercase tracking-widest">System Active</span>
+            <span className="text-xs font-bold text-green-700 uppercase tracking-widest">Consultant Online</span>
           </div>
         </div>
         
