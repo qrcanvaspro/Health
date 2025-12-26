@@ -8,7 +8,6 @@ export default defineConfig({
     emptyOutDir: true,
   },
   define: {
-    // This allows process.env to be accessible in the browser context
-    'process.env': process.env
-  }
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY),
+  },
 });
