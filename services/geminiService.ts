@@ -2,22 +2,24 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MedicineDetails, Language } from "../types";
 
+/**
+ * Lead Pharmacologist Logic for Medicine Details
+ */
 export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
-  if (!process.env.API_KEY) {
-    console.error("API Key missing in environment.");
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.error("Critical: API_KEY is missing.");
     return null;
   }
 
   try {
-    // Correct initialization: Always use a named parameter { apiKey: process.env.API_KEY }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `You are the Lead Pharmacologist at Manish Yadav MedCenter. 
-      TASK: Provide a comprehensive clinical analysis for the drug: "${name}".
-      LANGUAGE: Respond ENTIRELY in ${lang === Language.HI ? 'Pure Professional Hindi (Devanagari script)' : 'Professional Medical English'}.
-      IMPORTANT: If Hindi, do not use Hinglish. Use technical medical Hindi terms.
-      FORMAT: Response must be a valid JSON object matching the requested schema.`,
+      Analyze the following drug: "${name}".
+      Language: Respond in ${lang === Language.HI ? 'Professional Hindi (Devanagari script)' : 'Technical Medical English'}.
+      Note: Provide clinical facts only. Return a valid JSON matching the schema.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -38,16 +40,20 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     if (!text) return null;
     return JSON.parse(text) as MedicineDetails;
   } catch (error) {
-    console.error("Clinical Database Error:", error);
+    console.error("AI Medicine Explorer Error:", error);
     return null;
   }
 };
 
+/**
+ * Senior Medical Consultant Logic for Chat
+ */
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
-  if (!process.env.API_KEY) return "Service disconnected.";
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return "API key missing. Clinical connection failed.";
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: [
@@ -55,19 +61,16 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `You are the Senior Medical Consultant at Manish Yadav MedCenter.
-        TONE: Clinical, expert, and reassuring.
-        LANGUAGE: 
-        1. Hindi mode: Use pure professional Hindi (Devanagari).
-        2. English mode: Use advanced clinical English.
-        STRUCTURE: Include headers like [Consultant Summary] and [Clinical Advice].
-        DISCLAIMER: Always emphasize that this is AI support and a physical visit to Manish Yadav MedCenter is recommended.`,
+        systemInstruction: `You are Dr. Manish Yadav AI, Senior Medical Consultant.
+        Tone: Professional, clinical, yet helpful.
+        Language: ${lang === Language.HI ? 'Devanagari Hindi' : 'Advanced Medical English'}.
+        Medical Advice: Always qualify advice with "Based on AI analysis" and suggest visiting Manish Yadav MedCenter for critical care.`,
       }
     });
 
-    return response.text || "Diagnostic stream interrupted. Please retry.";
+    return response.text || "Diagnostic data missing from stream.";
   } catch (error) {
-    console.error("AI Consultation Error:", error);
-    return "The clinical AI network is currently busy. Please try again.";
+    console.error("Consultation Error:", error);
+    return "The clinical AI network is experiencing latency. Please try again.";
   }
 };
