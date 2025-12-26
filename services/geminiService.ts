@@ -1,17 +1,21 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MedicineDetails, Language } from "../types";
+
+const getApiKey = () => {
+  const key = process.env.API_KEY;
+  if (!key || key === 'undefined') {
+    // Fallback key provided by the user for immediate integration
+    return 'AIzaSyDuc3LRQw68kyqeE_g2peE-MGGLjyp35GU';
+  }
+  return key;
+};
 
 /**
  * Lead Pharmacologist Logic for Medicine Details
  */
 export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.error("Critical: API_KEY is missing.");
-    return null;
-  }
-
+  const apiKey = getApiKey();
+  
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -49,8 +53,7 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
  * Senior Medical Consultant Logic for Chat
  */
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API key missing. Clinical connection failed.";
+  const apiKey = getApiKey();
 
   try {
     const ai = new GoogleGenAI({ apiKey });
