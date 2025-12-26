@@ -9,13 +9,15 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
   }
 
   try {
+    // Correct initialization: Always use a named parameter { apiKey: process.env.API_KEY }
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `You are the Lead Pharmacologist at Manish Yadav MedCenter. Provide a complete analysis for the drug: "${name}".
-      LANGUAGE: Respond ONLY in ${lang === Language.HI ? 'Pure Professional Hindi (Devanagari script)' : 'Formal Clinical English'}.
-      IMPORTANT: If Hindi is selected, do not use English words. Use formal medical Hindi terms.
-      Return the data strictly in valid JSON format.`,
+      contents: `You are the Lead Pharmacologist at Manish Yadav MedCenter. 
+      TASK: Provide a comprehensive clinical analysis for the drug: "${name}".
+      LANGUAGE: Respond ENTIRELY in ${lang === Language.HI ? 'Pure Professional Hindi (Devanagari script)' : 'Professional Medical English'}.
+      IMPORTANT: If Hindi, do not use Hinglish. Use technical medical Hindi terms.
+      FORMAT: Response must be a valid JSON object matching the requested schema.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -36,7 +38,7 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     if (!text) return null;
     return JSON.parse(text) as MedicineDetails;
   } catch (error) {
-    console.error("Clinical Search Error:", error);
+    console.error("Clinical Database Error:", error);
     return null;
   }
 };
@@ -53,20 +55,19 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `You are the Chief Medical Consultant at "Manish Yadav MedCenter". 
-        TONE: Authoritative, empathetic, and clinical.
-        LANGUAGE REQUIREMENT: 
-        1. If mode is Hindi: Use ONLY professional Hindi (Devanagari). No Hinglish. 
-        2. If mode is English: Use Advanced Clinical English.
-        FORMATTING: Structure your response like a formal medical report with [Medical Summary] and [Clinical Advice].
-        MANDATORY: Always mention that this is AI support and a physical consultation with Manish Yadav MedCenter is advised.`,
+        systemInstruction: `You are the Senior Medical Consultant at Manish Yadav MedCenter.
+        TONE: Clinical, expert, and reassuring.
+        LANGUAGE: 
+        1. Hindi mode: Use pure professional Hindi (Devanagari).
+        2. English mode: Use advanced clinical English.
+        STRUCTURE: Include headers like [Consultant Summary] and [Clinical Advice].
+        DISCLAIMER: Always emphasize that this is AI support and a physical visit to Manish Yadav MedCenter is recommended.`,
       }
     });
 
-    return response.text || "Consultation report failed to generate.";
-    // Fixed: Changed opening parenthesis '(' to curly brace '{' to correctly define catch block scope
+    return response.text || "Diagnostic stream interrupted. Please retry.";
   } catch (error) {
-    console.error("Consultant Error:", error);
-    return "The clinical network is currently busy. Please try again.";
+    console.error("AI Consultation Error:", error);
+    return "The clinical AI network is currently busy. Please try again.";
   }
 };

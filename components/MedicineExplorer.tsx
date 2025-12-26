@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, CheckCircle, ShoppingCart } from 'lucide-react';
+import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, CheckCircle, ShoppingCart, Sparkles } from 'lucide-react';
 import { getMedicineDetails } from '../services/geminiService';
 import { Language, MedicineDetails } from '../types';
 import { TRANSLATIONS, ORDER_PHONE } from '../constants';
@@ -28,10 +28,10 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
       if (result) {
         setDetails(result);
       } else {
-        setError(lang === Language.EN ? "Medicine not found in our clinical index." : "दवाई की जानकारी डेटाबेस में नहीं मिली।");
+        setError(lang === Language.EN ? "The AI could not identify this drug. Please verify the name." : "AI इस दवाई की पहचान नहीं कर सका। कृपया नाम की जांच करें।");
       }
     } catch (err) {
-      setError(lang === Language.EN ? "Clinical database unreachable." : "डेटाबेस से संपर्क विफल रहा।");
+      setError(lang === Language.EN ? "AI Analysis failed due to network issues." : "नेटवर्क समस्या के कारण AI विश्लेषण विफल रहा।");
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <form onSubmit={handleSearch} className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-blue-600 rounded-[2rem] blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
+        <div className={`absolute -inset-1 bg-gradient-to-r from-teal-500 to-blue-600 rounded-[2rem] blur opacity-20 group-focus-within:opacity-40 transition duration-500 ${loading ? 'ai-pulse opacity-60' : ''}`}></div>
         <div className="relative flex items-center bg-white rounded-[1.8rem] shadow-sm overflow-hidden border border-slate-200">
           <input
             type="text"
@@ -53,12 +53,31 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
           <button
             type="submit"
             disabled={loading}
-            className="mr-3 px-10 py-4 bg-teal-600 text-white rounded-2xl font-black hover:bg-slate-900 disabled:bg-slate-200 transition-all flex items-center justify-center min-w-[140px]"
+            className="mr-3 px-10 py-4 bg-teal-600 text-white rounded-2xl font-black hover:bg-slate-900 disabled:bg-slate-200 transition-all flex items-center justify-center min-w-[150px] gap-2"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : (lang === Language.EN ? 'Analyze' : 'विश्लेषण')}
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>AI Processing</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={18} />
+                <span>{lang === Language.EN ? 'Analyze' : 'विश्लेषण'}</span>
+              </>
+            )}
           </button>
         </div>
       </form>
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center p-12 space-y-4 animate-pulse">
+           <div className="p-4 bg-teal-50 rounded-full text-teal-600">
+             <Activity size={48} className="animate-bounce" />
+           </div>
+           <p className="text-teal-600 font-black uppercase tracking-widest text-sm">AI Consulting Clinical Database...</p>
+        </div>
+      )}
 
       {error && (
         <div className="p-6 bg-red-50 border border-red-100 rounded-3xl text-red-700 flex items-center gap-4 animate-in slide-in-from-top-4">
@@ -67,7 +86,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
         </div>
       )}
 
-      {details && (
+      {details && !loading && (
         <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden clinical-pattern animate-in fade-in slide-in-from-bottom-10 duration-700">
           {/* Official Report Header */}
           <div className="bg-slate-900 text-white p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -86,7 +105,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
               <CheckCircle size={14} />
-              <span className="text-[10px] font-black uppercase tracking-wider">Clinical Data Verified</span>
+              <span className="text-[10px] font-black uppercase tracking-wider">AI Verified Clinical Data</span>
             </div>
           </div>
 
