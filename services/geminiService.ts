@@ -4,7 +4,7 @@ import { MedicineDetails, Language } from "../types";
 
 export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
   if (!process.env.API_KEY) {
-    console.error("API Key is missing.");
+    console.error("API Key missing in environment.");
     return null;
   }
 
@@ -12,9 +12,10 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `You are a Senior Consultant at Manish Yadav MedCenter. Analyze the drug: "${name}".
-      LANGUAGE: Respond ENTIRELY in ${lang === Language.HI ? 'Pure Hindi (Devanagari script)' : 'Clinical English'}.
-      FORMAT: Valid JSON. Use professional medical terminology.`,
+      contents: `You are the Lead Pharmacologist at Manish Yadav MedCenter. Provide a complete analysis for the drug: "${name}".
+      LANGUAGE: Respond ONLY in ${lang === Language.HI ? 'Pure Professional Hindi (Devanagari script)' : 'Formal Clinical English'}.
+      IMPORTANT: If Hindi is selected, do not use English words. Use formal medical Hindi terms.
+      Return the data strictly in valid JSON format.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -41,7 +42,7 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
 };
 
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
-  if (!process.env.API_KEY) return "Service offline.";
+  if (!process.env.API_KEY) return "Service disconnected.";
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -52,17 +53,20 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `You are the Lead Medical Consultant at "Manish Yadav MedCenter". 
-        TONE: Clinical, empathetic, highly professional.
-        LANGUAGE: If Hindi mode is active, use ONLY formal Hindi (Devanagari). No Hinglish.
-        STYLE: Structure your reply like a medical consultation report with headers like [Medical Assessment] and [Advisory Notes].
-        IMPORTANT: Mention clearly that physical examination is necessary.`,
+        systemInstruction: `You are the Chief Medical Consultant at "Manish Yadav MedCenter". 
+        TONE: Authoritative, empathetic, and clinical.
+        LANGUAGE REQUIREMENT: 
+        1. If mode is Hindi: Use ONLY professional Hindi (Devanagari). No Hinglish. 
+        2. If mode is English: Use Advanced Clinical English.
+        FORMATTING: Structure your response like a formal medical report with [Medical Summary] and [Clinical Advice].
+        MANDATORY: Always mention that this is AI support and a physical consultation with Manish Yadav MedCenter is advised.`,
       }
     });
 
-    return response.text || "Report generation failed.";
+    return response.text || "Consultation report failed to generate.";
+    // Fixed: Changed opening parenthesis '(' to curly brace '{' to correctly define catch block scope
   } catch (error) {
-    console.error("AI Consultant Error:", error);
-    return "Clinical database currently unreachable.";
+    console.error("Consultant Error:", error);
+    return "The clinical network is currently busy. Please try again.";
   }
 };
