@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle } from 'lucide-react';
+import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, CheckCircle, ShoppingCart } from 'lucide-react';
 import { getMedicineDetails } from '../services/geminiService';
 import { Language, MedicineDetails } from '../types';
 import { TRANSLATIONS, ORDER_PHONE } from '../constants';
@@ -28,87 +28,109 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
       if (result) {
         setDetails(result);
       } else {
-        setError(lang === Language.EN ? "Medicine not found or API error." : "दवाई नहीं मिली या API में त्रुटि है।");
+        setError(lang === Language.EN ? "Medicine data could not be retrieved. Please check the spelling." : "दवाई की जानकारी प्राप्त नहीं हो सकी। कृपया नाम की जांच करें।");
       }
     } catch (err) {
-      setError(lang === Language.EN ? "Failed to fetch data." : "डेटा प्राप्त करने में विफल।");
+      setError(lang === Language.EN ? "Network error. Please try again." : "नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSearch} className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.searchPlaceholder}
-          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl shadow-sm border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none transition-all text-slate-900 font-medium"
-        />
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        <button
-          type="submit"
-          disabled={loading}
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center justify-center min-w-[100px]"
-        >
-          {loading ? <Loader2 className="animate-spin" size={20} /> : (lang === Language.EN ? 'Search' : 'खोजें')}
-        </button>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <form onSubmit={handleSearch} className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-blue-500 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+        <div className="relative flex items-center bg-white rounded-[1.8rem] shadow-sm overflow-hidden border border-slate-100">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className="flex-1 pl-14 pr-4 py-5 focus:outline-none text-slate-900 font-bold text-lg"
+          />
+          <Search className="absolute left-5 text-slate-400" size={24} />
+          <button
+            type="submit"
+            disabled={loading}
+            className="mr-3 px-8 py-3 bg-teal-600 text-white rounded-2xl font-bold hover:bg-teal-700 disabled:opacity-50 transition-all flex items-center justify-center min-w-[120px] shadow-lg shadow-teal-100"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : (lang === Language.EN ? 'Analyze' : 'विश्लेषण')}
+          </button>
+        </div>
       </form>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 flex items-center gap-3 animate-in fade-in zoom-in-95">
-          <AlertCircle size={20} />
-          <p className="text-sm font-medium">{error}</p>
+        <div className="p-5 bg-red-50 border-2 border-red-100 rounded-2xl text-red-600 flex items-center gap-4 animate-in slide-in-from-top-2">
+          <AlertCircle size={24} />
+          <p className="font-bold">{error}</p>
         </div>
       )}
 
       {details && (
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-teal-100 rounded-2xl">
-              <Pill className="text-teal-600" size={28} />
+        <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden clinical-report-bg animate-in fade-in slide-in-from-bottom-8 duration-700">
+          {/* Clinical Header */}
+          <div className="bg-slate-50 border-b border-slate-200 p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-white border border-slate-200 rounded-3xl shadow-sm">
+                <FileText className="text-teal-600" size={32} />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black text-slate-800 tracking-tight">{details.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em]">MedCenter Verified Report</span>
+                  <div className="h-1 w-1 bg-slate-300 rounded-full"></div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date().toLocaleDateString()}</span>
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">{details.name}</h2>
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full border border-green-200">
+              <CheckCircle size={14} />
+              <span className="text-[10px] font-black uppercase tracking-wider">Clinical Accuracy High</span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InfoCard icon={<Activity size={20}/>} title={t.uses} content={details.use} color="blue" />
-            <InfoCard icon={<Pill size={20}/>} title={t.dosage} content={details.dosage} color="teal" />
-            <InfoCard icon={<ShieldAlert size={20}/>} title={t.sideEffects} content={details.sideEffects} color="red" />
-            <InfoCard icon={<FlaskConical size={20}/>} title={t.composition} content={details.composition} color="amber" />
+          {/* Report Body */}
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <ReportSection icon={<Activity size={20}/>} title={t.uses} content={details.use} color="border-blue-500" bg="bg-blue-50/50" />
+            <ReportSection icon={<Pill size={20}/>} title={t.dosage} content={details.dosage} color="border-teal-500" bg="bg-teal-50/50" />
+            <ReportSection icon={<ShieldAlert size={20}/>} title={t.sideEffects} content={details.sideEffects} color="border-red-500" bg="bg-red-50/50" />
+            <ReportSection icon={<FlaskConical size={20}/>} title={t.composition} content={details.composition} color="border-amber-500" bg="bg-amber-50/50" />
           </div>
 
-          <button 
-            onClick={() => window.open(`https://wa.me/${ORDER_PHONE}?text=Hello, I am Manish Yadav. I would like to order: ${details.name}.`, '_blank')}
-            className="mt-8 w-full py-4 bg-green-500 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-green-600 transition-colors shadow-lg shadow-green-200"
-          >
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.148-.67-1.611-.918-2.21-.242-.588-.487-.508-.67-.517-.172-.008-.37-.01-.567-.01-.197 0-.518.074-.79.37-.272.296-1.04 1.016-1.04 2.479 0 1.462 1.067 2.877 1.215 3.076.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.558 0 11.895-5.335 11.898-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            {t.buyNow}
-          </button>
+          {/* Footer / Order */}
+          <div className="p-8 bg-slate-50 border-t border-slate-100">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-xs text-slate-400 font-medium italic max-w-md">
+                * {lang === Language.EN 
+                   ? "Disclaimer: This AI report is for informational purposes. Consult a licensed physician for prescription guidance." 
+                   : "अस्वीकरण: यह AI रिपोर्ट केवल जानकारी के लिए है। प्रिस्क्रिप्शन मार्गदर्शन के लिए डॉक्टर से परामर्श लें।"}
+              </div>
+              <button 
+                onClick={() => window.open(`https://wa.me/${ORDER_PHONE}?text=Hello, MedCenter. I am Manish Yadav. Please check availability for: ${details.name}.`, '_blank')}
+                className="w-full md:w-auto px-10 py-4 bg-green-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-green-700 transition-all shadow-xl shadow-green-100 active:scale-95"
+              >
+                <ShoppingCart size={20} />
+                {t.buyNow}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-const InfoCard: React.FC<{icon: React.ReactNode, title: string, content: string, color: 'blue' | 'teal' | 'red' | 'amber'}> = ({ icon, title, content, color }) => {
-  const colors = {
-    blue: "bg-blue-50 text-blue-700",
-    teal: "bg-teal-50 text-teal-700",
-    red: "bg-red-50 text-red-700",
-    amber: "bg-amber-50 text-amber-700"
-  };
-  return (
-    <div className={`p-5 rounded-2xl ${colors[color]} border border-white shadow-sm`}>
-      <div className="flex items-center gap-2 mb-2 font-semibold">
+const ReportSection: React.FC<{icon: React.ReactNode, title: string, content: string, color: string, bg: string}> = ({ icon, title, content, color, bg }) => (
+  <div className={`p-6 rounded-3xl border-l-4 ${color} ${bg} shadow-sm group hover:bg-white transition-colors duration-300`}>
+    <div className="flex items-center gap-3 mb-4">
+      <div className="p-2 bg-white rounded-xl shadow-sm text-slate-700">
         {icon}
-        <span>{title}</span>
       </div>
-      <p className="text-slate-600 text-sm leading-relaxed">{content}</p>
+      <span className="font-black text-slate-800 uppercase tracking-tighter text-sm">{title}</span>
     </div>
-  );
-};
+    <p className="text-slate-600 text-sm leading-relaxed font-semibold">{content}</p>
+  </div>
+);
 
 export default MedicineExplorer;

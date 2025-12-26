@@ -3,20 +3,20 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MedicineDetails, Language } from "../types";
 
 export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.error("Critical: API Key is missing.");
+  // Use process.env.API_KEY directly to initialize GoogleGenAI as per coding guidelines
+  if (!process.env.API_KEY) {
+    console.error("Critical: API Key is missing. Check your environment variables.");
     return null;
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `You are a Senior Clinical Pharmacist at Manish Yadav MedCenter. Provide exhaustive clinical data for "${name}". 
-      LANGUAGE REQUIREMENT: Respond ONLY in ${lang === Language.HI ? 'Pure Formal Hindi (Devanagari script)' : 'Formal Medical English'}. 
-      STRICTLY FORBIDDEN: Do not use mixed "Hinglish" or English words in Hindi text unless it's a specific scientific unit.
-      Format the output as a valid JSON object.`,
+      contents: `You are a Senior Pharmacologist at Manish Yadav MedCenter. Analyze the following medicine: "${name}".
+      LANGUAGE: Provide the entire analysis ONLY in ${lang === Language.HI ? 'Pure Professional Hindi (Devanagari script)' : 'Scientific Medical English'}.
+      IMPORTANT: If the language is Hindi, do NOT use English characters or words. Use the official Hindi medical terminology.
+      Respond strictly in JSON format.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -43,11 +43,11 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
 };
 
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API configuration error.";
+  // Use process.env.API_KEY directly to initialize GoogleGenAI as per coding guidelines
+  if (!process.env.API_KEY) return "Critical System Error: Configuration Missing.";
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: [
@@ -56,18 +56,18 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
       ],
       config: {
         systemInstruction: `You are the Lead Medical Consultant at "Manish Yadav MedCenter". 
-        TONE: Highly professional, clinical, and reassuring. 
-        LANGUAGE POLICY: 
-        1. If language is Hindi: Use ONLY Pure Formal Hindi. No English words or sentences. Use Devanagari script. 
-        2. If language is English: Use Professional Medical English.
-        STRUCTURE: Use professional formatting with clear sections like [Consultation Summary], [Recommendations], and [Precautionary Advice].
-        DISCLAIMER: Always emphasize that this is AI support and a physical doctor visit is essential.`,
+        TONE: Highly clinical, professional, authoritative, and helpful.
+        LANGUAGE REQUIREMENT: 
+        1. If user preference is Hindi: Respond ENTIRELY in Pure Professional Hindi (Devanagari). No English mixing (Hinglish). 
+        2. If user preference is English: Use Advanced Clinical English.
+        FORMATTING: Use structured reports with headings like [Diagnosis Overview], [Professional Guidance], and [Next Steps].
+        MANDATORY: Address the user respectfully. Always emphasize clinical consultation is required.`,
       }
     });
 
-    return response.text || "I apologize, but I am unable to process your request at this time.";
+    return response.text || "Consultation error: No data returned.";
   } catch (error) {
     console.error("AI Assistant Error:", error);
-    return "The system is currently undergoing maintenance. Please try again later.";
+    return "The clinical database is currently unreachable. Please try again shortly.";
   }
 };
