@@ -2,15 +2,18 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MedicineDetails, Language } from "../types";
 
-/* Initializing with process.env.API_KEY directly as required by guidelines */
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.error("Critical: API Key is missing. Check your environment variables or vite.config.ts.");
+    return null;
+  }
+
   try {
-    /* Fetching medicine details using gemini-3-flash-preview for structured output */
+    const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Provide detailed information about the medicine "${name}" in ${lang === Language.HI ? 'Hindi' : 'English'}.`,
+      contents: `Provide complete and accurate medical details for "${name}" in ${lang === Language.HI ? 'Hindi' : 'English'}. Include scientific composition and common side effects. Format the output as a valid JSON object.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -27,37 +30,42 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
       },
     });
 
-    /* Directly accessing .text property of the GenerateContentResponse as per SDK best practices */
     const text = response.text;
-    if (!text) return null;
+    if (!text) {
+      console.warn("No text returned from Gemini API");
+      return null;
+    }
     return JSON.parse(text) as MedicineDetails;
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("AI Medicine Explorer Error:", error);
     return null;
   }
 };
 
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return "API configuration error. Please set the API_KEY.";
+
   try {
-    /* Using gemini-3-pro-preview for complex medical reasoning tasks */
+    const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: [
-        ...history.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
+        ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.text }] })),
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `You are a professional health expert. Address the person you are chatting with as "User". 
-        Respond in ${lang === Language.HI ? 'Hindi' : 'English'}.
-        Be polite, accurate, and always suggest consulting a real doctor for serious issues.
-        The app name is Manish Yadav Health. Never use the name "Manish Yadav" for the person you are talking to; always use "User" or "Aap" (in Hindi).`,
+        systemInstruction: `You are the premium health assistant for "Manish Yadav Health". 
+        Address the user as "User" or "Aap". 
+        Language: ${lang === Language.HI ? 'Hindi' : 'English'}.
+        Provide expert, empathetic advice. 
+        Always include a disclaimer that this is AI-generated advice and they should consult a doctor.`,
       }
     });
 
-    /* Returning the generated text content directly using the .text property */
-    return response.text || "I'm sorry, I couldn't process that.";
+    return response.text || "I'm sorry, I encountered an issue processing your request.";
   } catch (error) {
-    console.error("Gemini API Chat Error:", error);
-    return "Something went wrong. Please try again later.";
+    console.error("AI Assistant Error:", error);
+    return "The system is currently busy or configured incorrectly. Please check the API key.";
   }
 };

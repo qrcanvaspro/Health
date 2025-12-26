@@ -100,7 +100,7 @@ const HealthAssistant: React.FC<Props> = ({ lang, externalHistory, onUpdateHisto
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t.chatPlaceholder}
-            className="w-full pl-6 pr-14 py-4 bg-slate-50 rounded-[1.5rem] focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 border-2 border-transparent focus:border-transparent transition-all text-sm font-medium"
+            className="w-full pl-6 pr-14 py-4 bg-slate-50 rounded-[1.5rem] focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 border-2 border-transparent focus:border-transparent transition-all text-sm font-medium text-slate-900"
           />
           <button
             type="submit"

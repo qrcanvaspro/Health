@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical } from 'lucide-react';
+import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle } from 'lucide-react';
 import { getMedicineDetails } from '../services/geminiService';
 import { Language, MedicineDetails } from '../types';
 import { TRANSLATIONS, ORDER_PHONE } from '../constants';
@@ -12,6 +12,7 @@ interface Props {
 const MedicineExplorer: React.FC<Props> = ({ lang }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [details, setDetails] = useState<MedicineDetails | null>(null);
   const t = TRANSLATIONS[lang];
 
@@ -19,9 +20,21 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
-    const result = await getMedicineDetails(query, lang);
-    setDetails(result);
-    setLoading(false);
+    setError(null);
+    setDetails(null);
+    
+    try {
+      const result = await getMedicineDetails(query, lang);
+      if (result) {
+        setDetails(result);
+      } else {
+        setError(lang === Language.EN ? "Medicine not found or API error." : "दवाई नहीं मिली या API में त्रुटि है।");
+      }
+    } catch (err) {
+      setError(lang === Language.EN ? "Failed to fetch data." : "डेटा प्राप्त करने में विफल।");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,16 +45,24 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.searchPlaceholder}
-          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl shadow-sm border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none transition-all"
+          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl shadow-sm border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none transition-all text-slate-900 font-medium"
         />
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <button
+          type="submit"
           disabled={loading}
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center justify-center min-w-[100px]"
         >
-          {loading ? <Loader2 className="animate-spin" /> : (lang === Language.EN ? 'Search' : 'खोजें')}
+          {loading ? <Loader2 className="animate-spin" size={20} /> : (lang === Language.EN ? 'Search' : 'खोजें')}
         </button>
       </form>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 flex items-center gap-3 animate-in fade-in zoom-in-95">
+          <AlertCircle size={20} />
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
 
       {details && (
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">

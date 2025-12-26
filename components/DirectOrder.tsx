@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-/* Added ShoppingCart to the import list to resolve the "Cannot find name 'ShoppingCart'" error */
 import { Plus, Trash2, ShoppingBag, Send, AlertCircle, PackageCheck, MapPin, Phone, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { Medicine, Language } from '../types';
 import { TRANSLATIONS, INITIAL_ORDER_ITEMS, ORDER_PHONE } from '../constants';
@@ -106,7 +105,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
               <label className="text-xs font-bold text-slate-400 uppercase ml-2">{t.address}</label>
               <textarea
                 rows={3}
-                className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-teal-500 focus:bg-white transition-all outline-none resize-none"
+                className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-teal-500 focus:bg-white transition-all outline-none resize-none text-slate-900"
                 placeholder="Ex: 123 Health Street, City Name..."
                 value={userDetails.address}
                 onChange={e => setUserDetails({...userDetails, address: e.target.value})}
@@ -117,7 +116,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase ml-2">{t.unitNo}</label>
                 <input
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-teal-500 focus:bg-white transition-all outline-none"
+                  className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-teal-500 focus:bg-white transition-all outline-none text-slate-900"
                   placeholder="Ex: Apt 4B"
                   value={userDetails.unit}
                   onChange={e => setUserDetails({...userDetails, unit: e.target.value})}
@@ -128,7 +127,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-teal-500 focus:bg-white transition-all outline-none"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-teal-500 focus:bg-white transition-all outline-none text-slate-900"
                     placeholder="99999 99999"
                     value={userDetails.mobile}
                     onChange={e => setUserDetails({...userDetails, mobile: e.target.value})}
@@ -184,7 +183,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase ml-2">{t.medName}</label>
               <input
-                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all"
+                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all text-slate-900 font-medium"
                 value={newItem.name}
                 onChange={e => setNewItem({...newItem, name: e.target.value})}
               />
@@ -193,7 +192,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
               <label className="text-xs font-bold text-slate-400 uppercase ml-2">{t.totalStock}</label>
               <input
                 type="number"
-                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all"
+                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all text-slate-900 font-medium"
                 value={newItem.totalStock}
                 onChange={e => setNewItem({...newItem, totalStock: Number(e.target.value)})}
               />
@@ -201,7 +200,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase ml-2">{t.dosage}</label>
               <input
-                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all"
+                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all text-slate-900 font-medium"
                 value={newItem.dosage}
                 onChange={e => setNewItem({...newItem, dosage: e.target.value})}
               />
@@ -209,7 +208,7 @@ const DirectOrder: React.FC<Props> = ({ lang }) => {
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase ml-2">{t.timing}</label>
               <input
-                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all"
+                className="w-full p-4 bg-slate-50 rounded-2xl border-transparent focus:border-teal-500 focus:ring-0 transition-all text-slate-900 font-medium"
                 value={newItem.timing}
                 onChange={e => setNewItem({...newItem, timing: e.target.value})}
               />
