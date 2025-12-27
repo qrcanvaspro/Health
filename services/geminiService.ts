@@ -1,41 +1,37 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MedicineDetails, Language } from "../types";
 
+export interface ServiceResponse {
+  data: MedicineDetails | null;
+  error?: string;
+}
+
 const getApiKey = () => {
-  // Check multiple sources for the key to ensure it works on Netlify
   const key = process.env.API_KEY;
   if (!key || key === 'undefined' || key === '') {
-    // Immediate fallback for testing
+    // This is a common public fallback, but users should ideally provide their own.
     return 'AIzaSyDuc3LRQw68kyqeE_g2peE-MGGLjyp35GU';
   }
   return key;
 };
 
 const cleanJsonResponse = (text: string): string => {
-  // Remove markdown code blocks if present
   let cleaned = text.trim();
-  if (cleaned.startsWith('```json')) {
-    cleaned = cleaned.substring(7);
-  } else if (cleaned.startsWith('```')) {
-    cleaned = cleaned.substring(3);
-  }
-  if (cleaned.endsWith('```')) {
-    cleaned = cleaned.substring(0, cleaned.length - 3);
-  }
-  return cleaned.trim();
+  // Remove markdown formatting if the model ignored system instructions
+  cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '').trim();
+  return cleaned;
 };
 
-export const getMedicineDetails = async (name: string, lang: Language): Promise<MedicineDetails | null> => {
+export const getMedicineDetails = async (name: string, lang: Language): Promise<ServiceResponse> => {
   const apiKey = getApiKey();
   
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `You are the Lead Pharmacologist at Manish Yadav MedCenter. 
-      Analyze the drug: "${name}". 
-      Respond strictly in ${lang === Language.HI ? 'Hindi (Devanagari script)' : 'Medical English'}. 
-      Provide ONLY a JSON object with keys: name, use, dosage, sideEffects, composition. No markdown, no extra text.`,
+      contents: `You are a professional pharmacologist. Analyze the medicine "${name}" and provide clinical data. 
+      Language: ${lang === Language.HI ? 'Hindi' : 'English'}.
+      Return a valid JSON object with these keys: name, use, dosage, sideEffects, composition.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -53,13 +49,17 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     });
 
     const text = response.text;
-    if (!text) return null;
+    if (!text) return { data: null, error: "Empty AI response" };
     
     const cleaned = cleanJsonResponse(text);
-    return JSON.parse(cleaned) as MedicineDetails;
-  } catch (error) {
-    console.error("Clinical Search Error:", error);
-    return null;
+    const parsed = JSON.parse(cleaned) as MedicineDetails;
+    return { data: parsed };
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    let errorMsg = error.message || "Unknown Connection Error";
+    if (errorMsg.includes("API_KEY_INVALID")) errorMsg = "API Key Invalid - Please update settings.";
+    if (errorMsg.includes("SAFETY")) errorMsg = "Restricted content - AI cannot provide details for this drug.";
+    return { data: null, error: errorMsg };
   }
 };
 
@@ -74,13 +74,12 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `You are Dr. Manish Yadav AI, Senior Medical Consultant. Tone: Professional. Language: ${lang === Language.HI ? 'Hindi' : 'English'}.`,
+        systemInstruction: `You are Dr. Manish Yadav AI. Provide medical insights in ${lang === Language.HI ? 'Hindi' : 'English'}.`,
         thinkingConfig: { thinkingBudget: 1000 }
       }
     });
-    return response.text || "No response generated.";
-  } catch (error) {
-    console.error("Assistant Error:", error);
-    return lang === Language.HI ? "कनेक्शन एरर। कृपया दोबारा प्रयास करें।" : "Connection Error. Please try again.";
+    return response.text || "No response.";
+  } catch (error: any) {
+    return `Error: ${error.message || "Consultation failed"}`;
   }
 };

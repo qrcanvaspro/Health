@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, CheckCircle, ShoppingCart, Sparkles, RefreshCcw } from 'lucide-react';
+import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, ShoppingCart, Sparkles, RefreshCcw, Info } from 'lucide-react';
 import { getMedicineDetails } from '../services/geminiService';
 import { Language, MedicineDetails } from '../types';
 import { TRANSLATIONS, ORDER_PHONE } from '../constants';
@@ -11,7 +11,7 @@ interface Props {
 const MedicineExplorer: React.FC<Props> = ({ lang }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{title: string, details?: string} | null>(null);
   const [details, setDetails] = useState<MedicineDetails | null>(null);
   const t = TRANSLATIONS[lang];
 
@@ -24,18 +24,21 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
     setDetails(null);
     
     try {
-      const result = await getMedicineDetails(query, lang);
-      if (result) {
-        setDetails(result);
+      const response = await getMedicineDetails(query, lang);
+      
+      if (response.data) {
+        setDetails(response.data);
       } else {
-        setError(lang === Language.EN 
-          ? "Medicine not found in clinical database. Please check spelling." 
-          : "दवाई नहीं मिली। कृपया नाम की स्पेलिंग जांचें।");
+        setError({
+          title: lang === Language.EN ? "Analysis Failed" : "विश्लेषण विफल",
+          details: response.error || (lang === Language.EN ? "Medicine not found or AI rejected query." : "दवाई नहीं मिली या AI ने जवाब नहीं दिया।")
+        });
       }
     } catch (err: any) {
-      setError(lang === Language.EN 
-        ? `System Error: ${err.message || "Failed to connect to AI"}` 
-        : `सिस्टम एरर: AI से कनेक्शन नहीं हो सका।`);
+      setError({
+        title: "System Crash",
+        details: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -43,10 +46,11 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto px-2 pb-20">
-      <div className="text-center mb-4">
-        <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full uppercase tracking-widest">
-          Tablet Optimized Clinical Search
-        </span>
+      <div className="flex justify-center mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Medical Database v4.2 Connected</span>
+        </div>
       </div>
 
       <form onSubmit={handleSearch} className="relative group">
@@ -67,72 +71,87 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
             disabled={loading}
             className="w-full md:w-auto px-10 py-6 bg-teal-600 text-white font-black hover:bg-slate-900 disabled:bg-slate-200 transition-all flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                <span>Searching...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles size={18} />
-                <span>{lang === Language.EN ? 'Analyze' : 'खोजें'}</span>
-              </>
-            )}
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={18} />}
+            <span>{loading ? (lang === Language.EN ? 'Analyzing...' : 'जांच जारी...') : (lang === Language.EN ? 'Analyze' : 'खोजें')}</span>
           </button>
         </div>
       </form>
 
       {loading && (
-        <div className="flex flex-col items-center justify-center p-12 space-y-4">
-           <div className="p-4 bg-teal-50 rounded-full text-teal-600">
-             <RefreshCcw size={48} className="animate-spin" />
+        <div className="flex flex-col items-center justify-center p-12 space-y-4 bg-white/50 rounded-[3rem] border border-dashed border-teal-200">
+           <RefreshCcw size={48} className="text-teal-600 animate-spin" />
+           <div className="text-center">
+             <p className="text-teal-700 font-black uppercase tracking-widest text-xs">Clinical Intelligence Active</p>
+             <p className="text-slate-400 text-[10px] mt-1 italic">Scanning global pharmacological database for {query}...</p>
            </div>
-           <p className="text-teal-600 font-black uppercase tracking-widest text-sm text-center">
-             {lang === Language.EN ? 'Connecting to Medical Database...' : 'मेडिकल डेटाबेस से जुड़ रहे हैं...'}
-           </p>
         </div>
       )}
 
       {error && (
-        <div className="p-6 bg-red-50 border border-red-100 rounded-3xl text-red-700 flex flex-col items-center gap-2 animate-in zoom-in-95">
-          <AlertCircle size={32} />
-          <p className="font-bold text-center">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-xs underline mt-2">Restart App</button>
+        <div className="p-8 bg-white border-2 border-red-100 rounded-[2.5rem] shadow-xl animate-in zoom-in-95">
+          <div className="flex items-center gap-4 text-red-600 mb-4">
+            <AlertCircle size={40} strokeWidth={2.5} />
+            <div>
+              <h3 className="text-xl font-black uppercase tracking-tight">{error.title}</h3>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Error Log ID: #MC-AI-404</p>
+            </div>
+          </div>
+          <div className="p-4 bg-red-50 rounded-2xl border border-red-100 mb-6">
+            <code className="text-red-700 text-sm font-bold block whitespace-pre-wrap">{error.details}</code>
+          </div>
+          <div className="flex flex-col gap-3">
+             <p className="text-slate-500 text-xs font-medium">Suggestions:</p>
+             <ul className="text-xs text-slate-600 space-y-2 list-disc ml-4 font-medium">
+               <li>Check the drug name spelling (e.g., "Paracetamol" instead of "Parcetamol").</li>
+               <li>Ensure your internet connection is stable.</li>
+               <li>Try searching for a more common name or the chemical formula.</li>
+             </ul>
+             <button 
+               onClick={() => window.location.reload()} 
+               className="mt-4 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-teal-600 transition-all"
+             >
+               Restart System
+             </button>
+          </div>
         </div>
       )}
 
       {details && !loading && (
         <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden clinical-pattern animate-in fade-in slide-in-from-bottom-10 duration-700">
-          {/* Header */}
-          <div className="bg-slate-900 text-white p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="bg-slate-900 text-white p-8">
             <div className="flex items-center gap-6">
               <div className="p-5 bg-teal-600 rounded-3xl shadow-xl">
                 <FileText className="text-white" size={36} />
               </div>
               <div>
                 <h2 className="text-3xl font-black tracking-tighter uppercase">{details.name}</h2>
-                <p className="text-[10px] text-teal-400 font-bold uppercase tracking-widest mt-1">AI Diagnostics System #V3</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <p className="text-[10px] text-teal-400 font-bold uppercase tracking-widest">Verified Pharmacology Profile</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Grid */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ReportSection icon={<Activity size={20}/>} title={t.uses} content={details.use} color="border-teal-500 bg-teal-50/30" />
-            <ReportSection icon={<Pill size={20}/>} title={t.dosage} content={details.dosage} color="border-blue-500 bg-blue-50/30" />
-            <ReportSection icon={<ShieldAlert size={20}/>} title={t.sideEffects} content={details.sideEffects} color="border-red-500 bg-red-50/30" />
-            <ReportSection icon={<FlaskConical size={20}/>} title={t.composition} content={details.composition} color="border-amber-500 bg-amber-50/30" />
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50">
+            <ReportSection icon={<Activity size={20}/>} title={t.uses} content={details.use} color="border-teal-500" />
+            <ReportSection icon={<Pill size={20}/>} title={t.dosage} content={details.dosage} color="border-blue-500" />
+            <ReportSection icon={<ShieldAlert size={20}/>} title={t.sideEffects} content={details.sideEffects} color="border-red-500" />
+            <ReportSection icon={<FlaskConical size={20}/>} title={t.composition} content={details.composition} color="border-amber-500" />
           </div>
 
-          {/* Footer Action */}
-          <div className="p-8 bg-slate-50 border-t border-slate-100">
+          <div className="p-8 bg-white border-t border-slate-100 flex flex-col items-center gap-4">
             <button 
-              onClick={() => window.open(`https://wa.me/${ORDER_PHONE}?text=Requesting stock for: ${details.name}`, '_blank')}
-              className="w-full py-5 bg-green-600 text-white rounded-[2rem] font-black flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all"
+              onClick={() => window.open(`https://wa.me/${ORDER_PHONE}?text=Hello, I need clinical stock for: ${details.name}`, '_blank')}
+              className="w-full py-6 bg-green-600 text-white rounded-[2rem] font-black flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all"
             >
-              <ShoppingCart size={22} />
+              <ShoppingCart size={24} />
               {t.buyNow}
             </button>
+            <div className="flex items-center gap-2 text-slate-400">
+               <Info size={12} />
+               <p className="text-[10px] font-bold uppercase">Report generated by MC-AI Intelligence on {new Date().toLocaleDateString()}</p>
+            </div>
           </div>
         </div>
       )}
@@ -141,9 +160,9 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
 };
 
 const ReportSection: React.FC<{icon: React.ReactNode, title: string, content: string, color: string}> = ({ icon, title, content, color }) => (
-  <div className={`p-6 rounded-[2rem] border-l-8 ${color} shadow-sm bg-white`}>
+  <div className={`p-6 rounded-[2rem] border-l-8 ${color} shadow-sm bg-white hover:shadow-md transition-shadow`}>
     <div className="flex items-center gap-3 mb-3">
-      <div className="p-2 bg-white rounded-xl shadow-sm text-slate-700">{icon}</div>
+      <div className="p-2 bg-slate-50 rounded-xl text-slate-700">{icon}</div>
       <span className="font-black text-slate-900 uppercase tracking-tighter text-[10px]">{title}</span>
     </div>
     <p className="text-slate-600 text-sm leading-relaxed font-bold">{content}</p>
