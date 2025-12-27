@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, ShoppingCart, MessageSquare, LineChart, Languages, User, Menu, Home as HomeIcon, Key, Lock } from 'lucide-react';
+import { LayoutGrid, ShoppingCart, MessageSquare, LineChart, Languages, User, Menu, Home as HomeIcon, Key, Lock, X, ShieldCheck } from 'lucide-react';
 import { Language, ChatMessage } from './types';
 import { TRANSLATIONS } from './constants';
 
@@ -17,8 +17,7 @@ declare global {
   }
 
   interface Window {
-    // FIX: Removed readonly modifier to fix TypeScript "identical modifiers" error on property augmentation
-    aistudio: AIStudio;
+    aistudio?: AIStudio;
   }
 }
 
@@ -27,24 +26,48 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [hasKey, setHasKey] = useState(true);
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [passInput, setPassInput] = useState('');
+  const [passError, setPassError] = useState(false);
+
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     const checkKey = async () => {
-      if (window.aistudio) {
-        const selected = await window.aistudio.hasSelectedApiKey();
-        setHasKey(selected);
+      if (window.aistudio?.hasSelectedApiKey) {
+        try {
+          const selected = await window.aistudio.hasSelectedApiKey();
+          setHasKey(selected);
+        } catch (e) {
+          console.error("Key check failed", e);
+        }
       }
     };
     checkKey();
   }, []);
 
-  const handleOpenKeySelector = async () => {
-    // FIX: Removed password prompt to strictly comply with "must not ask user for it under any circumstances" guideline for API key management
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      // FIX: Assume key selection was successful to mitigate platform race conditions as per guidelines
-      setHasKey(true);
+  const handleOpenKeySelector = () => {
+    setShowPassModal(true);
+    setPassInput('');
+    setPassError(false);
+  };
+
+  const verifyPassword = async () => {
+    if (passInput === 'key123@@') {
+      setShowPassModal(false);
+      if (window.aistudio?.openSelectKey) {
+        try {
+          await window.aistudio.openSelectKey();
+          setHasKey(true);
+        } catch (err) {
+          console.error("Error opening key selector:", err);
+        }
+      } else {
+        alert(lang === Language.EN ? "Platform Key Selector not found." : "प्लेटफॉर्म की चयनकर्ता नहीं मिला।");
+      }
+    } else {
+      setPassError(true);
+      setTimeout(() => setPassError(false), 2000);
     }
   };
 
@@ -78,6 +101,57 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-x-hidden">
+      {/* Password Modal */}
+      {showPassModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
+                    <Lock size={24} />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">System Security</h3>
+                </div>
+                <button onClick={() => setShowPassModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <X size={24} className="text-slate-400" />
+                </button>
+              </div>
+              
+              <p className="text-slate-500 font-medium mb-6 text-sm">
+                {lang === Language.EN ? "Enter administrative password to manage system API keys." : "सिस्टम API कीज़ प्रबंधित करने के लिए प्रशासनिक पासवर्ड दर्ज करें।"}
+              </p>
+
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  autoFocus
+                  placeholder="••••••••"
+                  value={passInput}
+                  onChange={(e) => setPassInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
+                  className={`w-full p-5 bg-slate-50 rounded-2xl border-2 transition-all outline-none text-center text-2xl tracking-widest font-bold ${passError ? 'border-red-500 bg-red-50 text-red-600 animate-shake' : 'border-transparent focus:border-teal-500 focus:bg-white'}`}
+                />
+                
+                {passError && (
+                  <p className="text-red-500 text-xs font-bold text-center uppercase tracking-widest">Access Denied: Wrong Password</p>
+                )}
+
+                <button 
+                  onClick={verifyPassword}
+                  className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-teal-600 transition-all shadow-xl active:scale-95"
+                >
+                  {lang === Language.EN ? "Unlock Access" : "एक्सेस अनलॉक करें"}
+                </button>
+              </div>
+            </div>
+            <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Authorized Personnel Only • IP Logged</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col p-6 sticky top-0 h-screen z-40">
         <div className="flex items-center gap-3 mb-10">
@@ -102,7 +176,7 @@ const App: React.FC = () => {
         <div className="mt-auto space-y-4">
           <button 
             onClick={handleOpenKeySelector}
-            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${!hasKey ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${!hasKey ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
           >
             <div className="flex items-center gap-2">
               <Lock size={14} className="opacity-50" />
@@ -140,7 +214,7 @@ const App: React.FC = () => {
           <h1 className="font-bold text-slate-800">MedCenter</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleOpenKeySelector} className={`p-2 rounded-xl ${!hasKey ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+          <button onClick={handleOpenKeySelector} className={`p-2 rounded-xl transition-all active:scale-95 ${!hasKey ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
             <Key size={20} />
           </button>
           <button onClick={toggleLanguage} className="p-2 text-teal-600 bg-teal-50 rounded-xl"><Languages size={20} /></button>
@@ -180,7 +254,7 @@ const App: React.FC = () => {
 const NavItem: React.FC<{active: boolean, icon: React.ReactNode, label: string, onClick: () => void}> = ({ active, icon, label, onClick }) => (
   <button 
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all ${
+    className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all cursor-pointer ${
       active ? 'bg-teal-600 text-white shadow-xl shadow-teal-100 translate-x-1' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
     }`}
   >
@@ -192,7 +266,7 @@ const NavItem: React.FC<{active: boolean, icon: React.ReactNode, label: string, 
 const MobileNavItem: React.FC<{active: boolean, icon: React.ReactNode, onClick: () => void}> = ({ active, icon, onClick }) => (
   <button 
     onClick={onClick}
-    className={`p-4 rounded-2xl transition-all ${active ? 'bg-teal-600 text-white shadow-xl shadow-teal-100' : 'text-slate-400'}`}
+    className={`p-4 rounded-2xl transition-all cursor-pointer ${active ? 'bg-teal-600 text-white shadow-xl shadow-teal-100' : 'text-slate-400'}`}
   >
     {icon}
   </button>

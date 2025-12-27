@@ -46,10 +46,21 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
   };
 
   const handleOpenKey = async () => {
-    // FIX: Removed password prompt to comply with "application must not ask the user for it under any circumstances" guideline
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      setError(null);
+    const password = window.prompt(lang === Language.EN ? "Enter System Password to unlock key settings:" : "की सेटिंग्स अनलॉक करने के लिए सिस्टम पासवर्ड दर्ज करें:");
+    
+    if (password === 'key123@@') {
+      if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+        try {
+          await window.aistudio.openSelectKey();
+          setError(null);
+        } catch (err) {
+          console.error("Error opening key selector:", err);
+        }
+      } else {
+        alert(lang === Language.EN ? "System Key Selector not available." : "सिस्टम की चयनकर्ता उपलब्ध नहीं है।");
+      }
+    } else if (password !== null) {
+      alert(lang === Language.EN ? "Incorrect Password. Access Denied." : "गलत पासवर्ड। पहुंच अस्वीकृत।");
     }
   };
 
@@ -78,7 +89,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full md:w-auto px-10 py-6 bg-teal-600 text-white font-black hover:bg-slate-900 disabled:bg-slate-200 transition-all flex items-center justify-center gap-2"
+            className="w-full md:w-auto px-10 py-6 bg-teal-600 text-white font-black hover:bg-slate-900 disabled:bg-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={18} />}
             <span>{loading ? (lang === Language.EN ? 'Analyzing...' : 'जांच जारी...') : (lang === Language.EN ? 'Analyze' : 'खोजें')}</span>
@@ -112,7 +123,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
           {error.isKeyError && (
             <button 
               onClick={handleOpenKey}
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-teal-600 shadow-xl shadow-slate-100 transition-all mb-4"
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-teal-600 shadow-xl shadow-slate-100 transition-all mb-4 cursor-pointer"
             >
               <Lock size={20} />
               {lang === Language.EN ? "Unlock & Update API Key" : "अनलॉक करें और API की अपडेट करें"}
@@ -122,11 +133,11 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
           <div className="flex flex-col gap-3">
              <p className="text-slate-500 text-xs font-medium">Next Steps:</p>
              <ul className="text-xs text-slate-600 space-y-2 list-disc ml-4 font-medium">
-               <li>{lang === Language.EN ? 'API Key authentication required. Use the official platform dialog.' : 'API की प्रमाणीकरण आवश्यक है। आधिकारिक प्लेटफॉर्म डायलॉग का उपयोग करें।'}</li>
+               <li>{lang === Language.EN ? 'Restricted Access: You need the system password to change settings.' : 'प्रतिबंधित पहुंच: सेटिंग्स बदलने के लिए आपको सिस्टम पासवर्ड की आवश्यकता है।'}</li>
                <li>{lang === Language.EN ? 'Ensure you select a "Paid" project key from AI Studio once unlocked.' : 'अनलॉक होने के बाद सुनिश्चित करें कि आप AI Studio से "Paid" प्रोजेक्ट की चुनें।'}</li>
              </ul>
              {!error.isKeyError && (
-               <button onClick={() => window.location.reload()} className="mt-4 py-4 bg-slate-900 text-white rounded-2xl font-bold">Restart System</button>
+               <button onClick={() => window.location.reload()} className="mt-4 py-4 bg-slate-900 text-white rounded-2xl font-bold cursor-pointer">Restart System</button>
              )}
           </div>
         </div>
@@ -159,7 +170,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
           <div className="p-8 bg-white border-t border-slate-100 flex flex-col items-center gap-4">
             <button 
               onClick={() => window.open(`https://wa.me/${ORDER_PHONE}?text=Hello, I need clinical stock for: ${details.name}`, '_blank')}
-              className="w-full py-6 bg-green-600 text-white rounded-[2rem] font-black flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all"
+              className="w-full py-6 bg-green-600 text-white rounded-[2rem] font-black flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all cursor-pointer"
             >
               <ShoppingCart size={24} />
               {t.buyNow}
