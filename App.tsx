@@ -10,13 +10,12 @@ import DirectOrder from './components/DirectOrder';
 import HealthDashboard from './components/HealthDashboard';
 import Reminders from './components/Reminders';
 
-// Fixed global type to match the platform's expected AIStudio interface and modifiers
+// Safe global access
 declare global {
   interface AIStudio {
-    hasSelectedApiKey(): Promise<boolean>;
-    openSelectKey(): Promise<void>;
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
   }
-
   interface Window {
     aistudio?: AIStudio;
   }
@@ -35,16 +34,23 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkKey = async () => {
-      try {
-        if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+      // Check for aistudio multiple times in case of injection delays
+      if (window.aistudio?.hasSelectedApiKey) {
+        try {
           const selected = await window.aistudio.hasSelectedApiKey();
           setHasKey(selected);
+        } catch (e) {
+          console.warn("Key check failed during init");
         }
-      } catch (e) {
-        console.warn("Initial key check failed, likely waiting for platform injection.");
       }
     };
+    
+    // Initial check
     checkKey();
+    
+    // Fallback check after 2 seconds
+    const timer = setTimeout(checkKey, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleOpenKeySelector = () => {
@@ -56,19 +62,18 @@ const App: React.FC = () => {
   const verifyPassword = async () => {
     if (passInput === 'key123@@') {
       setShowPassModal(false);
-      if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+      if (window.aistudio?.openSelectKey) {
         try {
           await window.aistudio.openSelectKey();
-          setHasKey(true); // Assume success as per guidelines
+          setHasKey(true);
         } catch (err) {
           console.error("Error opening key selector:", err);
         }
       } else {
-        alert(lang === Language.EN ? "API Key Selector is not available in this preview environment." : "इस प्रीव्यू वातावरण में API की चयनकर्ता उपलब्ध नहीं है।");
+        alert(lang === Language.EN ? "Platform Key Selector not found." : "प्लेटफॉर्म की चयनकर्ता नहीं मिला।");
       }
     } else {
       setPassError(true);
-      // Visual feedback for wrong password
       setTimeout(() => setPassError(false), 2000);
     }
   };
@@ -120,25 +125,23 @@ const App: React.FC = () => {
                 </button>
               </div>
               
-              <p className="text-slate-500 font-medium mb-8 text-sm leading-relaxed">
-                {lang === Language.EN ? "Please enter your 8-digit system passcode to modify API configuration." : "API कॉन्फ़िगरेशन बदलने के लिए कृपया अपना 8-अंकीय सिस्टम पासकोड दर्ज करें।"}
+              <p className="text-slate-500 font-medium mb-8 text-sm leading-relaxed text-center">
+                {lang === Language.EN ? "Enter your 8-digit system passcode." : "अपना 8-अंकीय सिस्टम पासकोड दर्ज करें।"}
               </p>
 
               <div className="space-y-4">
-                <div className="relative">
-                  <input
-                    type="password"
-                    autoFocus
-                    placeholder="••••••••"
-                    value={passInput}
-                    onChange={(e) => setPassInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
-                    className={`w-full p-5 bg-slate-50 rounded-2xl border-2 transition-all outline-none text-center text-3xl tracking-[0.5em] font-black ${passError ? 'border-red-500 bg-red-50 text-red-600 animate-shake' : 'border-transparent focus:border-teal-500 focus:bg-white'}`}
-                  />
-                </div>
+                <input
+                  type="password"
+                  autoFocus
+                  placeholder="••••••••"
+                  value={passInput}
+                  onChange={(e) => setPassInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
+                  className={`w-full p-5 bg-slate-50 rounded-2xl border-2 transition-all outline-none text-center text-3xl tracking-[0.5em] font-black ${passError ? 'border-red-500 bg-red-50 text-red-600 animate-shake' : 'border-transparent focus:border-teal-500 focus:bg-white'}`}
+                />
                 
                 {passError && (
-                  <p className="text-red-500 text-[10px] font-black text-center uppercase tracking-widest animate-pulse">Error: Invalid Passcode Provided</p>
+                  <p className="text-red-500 text-[10px] font-black text-center uppercase tracking-widest">Error: Invalid Passcode</p>
                 )}
 
                 <button 
@@ -151,7 +154,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Manish Yadav Healthcare Systems • Secure Node</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Manish Yadav Secure Node</p>
             </div>
           </div>
         </div>
@@ -160,9 +163,7 @@ const App: React.FC = () => {
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col p-6 sticky top-0 h-screen z-40">
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 bg-teal-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-teal-100">
-            MC
-          </div>
+          <div className="w-10 h-10 bg-teal-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-teal-100">MC</div>
           <div>
             <h1 className="font-bold text-slate-800 text-lg leading-tight">MedCenter</h1>
             <p className="text-xs text-slate-400 font-medium tracking-wide">Elite AI Healthcare</p>
@@ -190,24 +191,14 @@ const App: React.FC = () => {
             <Key size={16} />
           </button>
           
-          <button 
-            onClick={toggleLanguage}
-            className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all border border-transparent hover:border-teal-100"
-          >
+          <button onClick={toggleLanguage} className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 border border-transparent">
             <span className="text-sm font-bold text-slate-700">{lang === Language.EN ? 'हिन्दी' : 'English'}</span>
-            <div className="p-2 bg-teal-50 text-teal-600 rounded-xl">
-              <Languages size={18} />
-            </div>
+            <Languages size={18} className="text-teal-600" />
           </button>
           
-          <div className="flex items-center gap-3 p-4 bg-teal-600 rounded-2xl text-white shadow-xl shadow-teal-100">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <User size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] opacity-70 font-bold uppercase tracking-wider">Premium Access</p>
-              <p className="text-sm font-bold">Manish Yadav</p>
-            </div>
+          <div className="flex items-center gap-3 p-4 bg-teal-600 rounded-2xl text-white">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><User size={20} /></div>
+            <p className="text-sm font-bold">Manish Yadav</p>
           </div>
         </div>
       </aside>
@@ -215,38 +206,26 @@ const App: React.FC = () => {
       {/* Header - Mobile */}
       <header className="md:hidden glass-morphism sticky top-0 z-50 px-4 py-4 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-2" onClick={() => setActiveTab('home')}>
-          <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-teal-50">MC</div>
+          <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold">MC</div>
           <h1 className="font-bold text-slate-800">MedCenter</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleOpenKeySelector} className={`p-2 rounded-xl transition-all active:scale-95 ${!hasKey ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-            <Key size={20} />
-          </button>
+          <button onClick={handleOpenKeySelector} className="p-2 bg-slate-100 rounded-xl"><Key size={20} /></button>
           <button onClick={toggleLanguage} className="p-2 text-teal-600 bg-teal-50 rounded-xl"><Languages size={20} /></button>
-          <button className="p-2 text-slate-600"><Menu size={20} /></button>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-10 max-w-6xl mx-auto w-full mb-20 md:mb-0">
-        <div className="mb-8 flex justify-between items-end">
-          <div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t.welcome}</h2>
-            <p className="text-slate-500 mt-2 font-medium">Advanced medical consultation & healthcare management.</p>
-          </div>
-          <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-xs font-bold text-green-700 uppercase tracking-widest">Consultant Online</span>
-          </div>
+        <div className="mb-8">
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t.welcome}</h2>
+          <p className="text-slate-500 mt-2 font-medium">Advanced medical consultation system.</p>
         </div>
-        
-        <div className="pb-10">
-          {renderContent()}
-        </div>
+        {renderContent()}
       </main>
 
       {/* Mobile Navigation */}
-      <nav className="md:hidden glass-morphism fixed bottom-0 left-0 right-0 z-50 px-4 py-3 border-t border-slate-100 flex justify-between items-center rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+      <nav className="md:hidden glass-morphism fixed bottom-0 left-0 right-0 z-50 px-4 py-3 border-t border-slate-100 flex justify-between items-center rounded-t-[2rem]">
         <MobileNavItem active={activeTab === 'home'} icon={<HomeIcon size={24}/>} onClick={() => setActiveTab('home')} />
         <MobileNavItem active={activeTab === 'explorer'} icon={<LayoutGrid size={24}/>} onClick={() => setActiveTab('explorer')} />
         <MobileNavItem active={activeTab === 'order'} icon={<ShoppingCart size={24}/>} onClick={() => setActiveTab('order')} />
@@ -257,22 +236,13 @@ const App: React.FC = () => {
 };
 
 const NavItem: React.FC<{active: boolean, icon: React.ReactNode, label: string, onClick: () => void}> = ({ active, icon, label, onClick }) => (
-  <button 
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all cursor-pointer ${
-      active ? 'bg-teal-600 text-white shadow-xl shadow-teal-100 translate-x-1' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-    }`}
-  >
-    <span className={active ? 'text-white' : 'text-slate-400'}>{icon}</span>
-    <span className="text-sm">{label}</span>
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition-all ${active ? 'bg-teal-600 text-white shadow-xl shadow-teal-100' : 'text-slate-400 hover:bg-slate-50'}`}>
+    {icon} <span className="text-sm">{label}</span>
   </button>
 );
 
 const MobileNavItem: React.FC<{active: boolean, icon: React.ReactNode, onClick: () => void}> = ({ active, icon, onClick }) => (
-  <button 
-    onClick={onClick}
-    className={`p-4 rounded-2xl transition-all cursor-pointer ${active ? 'bg-teal-600 text-white shadow-xl shadow-teal-100' : 'text-slate-400'}`}
-  >
+  <button onClick={onClick} className={`p-4 rounded-2xl transition-all ${active ? 'bg-teal-600 text-white' : 'text-slate-400'}`}>
     {icon}
   </button>
 );

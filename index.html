@@ -20,15 +20,21 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .clinical-pattern {
-            background-image: radial-gradient(#cbd5e1 0.6px, transparent 0.6px);
-            background-size: 24px 24px;
-        }
         #root:empty {
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #root:empty::before {
+            content: "Initializing Medical Systems...";
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 12px;
         }
         #root:empty::after {
             content: "";
@@ -42,14 +48,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .ai-pulse {
-            animation: pulse-glow 2s infinite;
-        }
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(13, 148, 136, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
-        }
         .animate-shake {
             animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
         }
@@ -59,17 +57,13 @@
             30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
             40%, 60% { transform: translate3d(4px, 0, 0); }
         }
-        /* Mobile specific fixes */
-        @media (max-width: 768px) {
-            h2 { font-size: 2rem !important; }
-        }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19",
-    "react-dom": "https://esm.sh/react-dom@19",
-    "react-dom/client": "https://esm.sh/react-dom@19/client",
+    "react": "https://esm.sh/react@19?dev",
+    "react-dom": "https://esm.sh/react-dom@19?dev",
+    "react-dom/client": "https://esm.sh/react-dom@19/client?dev",
     "@google/genai": "https://esm.sh/@google/genai@1.34.0",
     "lucide-react": "https://esm.sh/lucide-react@0.473.0",
     "recharts": "https://esm.sh/recharts@2.15.0",
