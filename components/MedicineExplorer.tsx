@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, ShoppingCart, Sparkles, RefreshCcw, Info } from 'lucide-react';
+import { Search, Loader2, Pill, Activity, ShieldAlert, FlaskConical, AlertCircle, FileText, ShoppingCart, Sparkles, RefreshCcw, Info, Key, Lock } from 'lucide-react';
 import { getMedicineDetails } from '../services/geminiService';
 import { Language, MedicineDetails } from '../types';
 import { TRANSLATIONS, ORDER_PHONE } from '../constants';
@@ -11,7 +11,7 @@ interface Props {
 const MedicineExplorer: React.FC<Props> = ({ lang }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{title: string, details?: string} | null>(null);
+  const [error, setError] = useState<{title: string, details?: string, isKeyError?: boolean} | null>(null);
   const [details, setDetails] = useState<MedicineDetails | null>(null);
   const t = TRANSLATIONS[lang];
 
@@ -30,17 +30,26 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
         setDetails(response.data);
       } else {
         setError({
-          title: lang === Language.EN ? "Analysis Failed" : "विश्लेषण विफल",
-          details: response.error || (lang === Language.EN ? "Medicine not found or AI rejected query." : "दवाई नहीं मिली या AI ने जवाब नहीं दिया।")
+          title: response.isKeyError ? (lang === Language.EN ? "API Key Issue" : "API की समस्या") : (lang === Language.EN ? "Analysis Failed" : "विश्लेषण विफल"),
+          details: response.error || (lang === Language.EN ? "Medicine not found." : "दवाई नहीं मिली।"),
+          isKeyError: response.isKeyError
         });
       }
     } catch (err: any) {
       setError({
-        title: "System Crash",
+        title: "System Error",
         details: err.message
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenKey = async () => {
+    // FIX: Removed password prompt to comply with "application must not ask the user for it under any circumstances" guideline
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setError(null);
     }
   };
 
@@ -49,7 +58,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
       <div className="flex justify-center mb-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full shadow-sm">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Medical Database v4.2 Connected</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Medical Database v4.8 Protected</span>
         </div>
       </div>
 
@@ -93,25 +102,32 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
             <AlertCircle size={40} strokeWidth={2.5} />
             <div>
               <h3 className="text-xl font-black uppercase tracking-tight">{error.title}</h3>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Error Log ID: #MC-AI-404</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Error Log: #MC-AI-KEY-ERR</p>
             </div>
           </div>
           <div className="p-4 bg-red-50 rounded-2xl border border-red-100 mb-6">
             <code className="text-red-700 text-sm font-bold block whitespace-pre-wrap">{error.details}</code>
           </div>
+          
+          {error.isKeyError && (
+            <button 
+              onClick={handleOpenKey}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-teal-600 shadow-xl shadow-slate-100 transition-all mb-4"
+            >
+              <Lock size={20} />
+              {lang === Language.EN ? "Unlock & Update API Key" : "अनलॉक करें और API की अपडेट करें"}
+            </button>
+          )}
+
           <div className="flex flex-col gap-3">
-             <p className="text-slate-500 text-xs font-medium">Suggestions:</p>
+             <p className="text-slate-500 text-xs font-medium">Next Steps:</p>
              <ul className="text-xs text-slate-600 space-y-2 list-disc ml-4 font-medium">
-               <li>Check the drug name spelling (e.g., "Paracetamol" instead of "Parcetamol").</li>
-               <li>Ensure your internet connection is stable.</li>
-               <li>Try searching for a more common name or the chemical formula.</li>
+               <li>{lang === Language.EN ? 'API Key authentication required. Use the official platform dialog.' : 'API की प्रमाणीकरण आवश्यक है। आधिकारिक प्लेटफॉर्म डायलॉग का उपयोग करें।'}</li>
+               <li>{lang === Language.EN ? 'Ensure you select a "Paid" project key from AI Studio once unlocked.' : 'अनलॉक होने के बाद सुनिश्चित करें कि आप AI Studio से "Paid" प्रोजेक्ट की चुनें।'}</li>
              </ul>
-             <button 
-               onClick={() => window.location.reload()} 
-               className="mt-4 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-teal-600 transition-all"
-             >
-               Restart System
-             </button>
+             {!error.isKeyError && (
+               <button onClick={() => window.location.reload()} className="mt-4 py-4 bg-slate-900 text-white rounded-2xl font-bold">Restart System</button>
+             )}
           </div>
         </div>
       )}
@@ -150,7 +166,7 @@ const MedicineExplorer: React.FC<Props> = ({ lang }) => {
             </button>
             <div className="flex items-center gap-2 text-slate-400">
                <Info size={12} />
-               <p className="text-[10px] font-bold uppercase">Report generated by MC-AI Intelligence on {new Date().toLocaleDateString()}</p>
+               <p className="text-[10px] font-bold uppercase">Report generated on {new Date().toLocaleDateString()}</p>
             </div>
           </div>
         </div>

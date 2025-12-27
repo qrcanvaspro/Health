@@ -8,7 +8,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   define: {
-    // Explicitly stringify the environment variable for replacement in the source code
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || 'AIzaSyDuc3LRQw68kyqeE_g2peE-MGGLjyp35GU'),
+    // Rely exclusively on the environment variable provided by the platform
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY),
   },
 });

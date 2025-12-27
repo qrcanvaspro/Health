@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, ShoppingCart, MessageSquare, LineChart, Languages, User, Menu, Home as HomeIcon } from 'lucide-react';
+import { LayoutGrid, ShoppingCart, MessageSquare, LineChart, Languages, User, Menu, Home as HomeIcon, Key, Lock } from 'lucide-react';
 import { Language, ChatMessage } from './types';
 import { TRANSLATIONS } from './constants';
 
@@ -11,16 +10,47 @@ import DirectOrder from './components/DirectOrder';
 import HealthDashboard from './components/HealthDashboard';
 import Reminders from './components/Reminders';
 
+declare global {
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+
+  interface Window {
+    // FIX: Removed readonly modifier to fix TypeScript "identical modifiers" error on property augmentation
+    aistudio: AIStudio;
+  }
+}
+
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>(Language.EN);
   const [activeTab, setActiveTab] = useState('home');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [hasKey, setHasKey] = useState(true);
   const t = TRANSLATIONS[lang];
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasKey(selected);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    // FIX: Removed password prompt to strictly comply with "must not ask user for it under any circumstances" guideline for API key management
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // FIX: Assume key selection was successful to mitigate platform race conditions as per guidelines
+      setHasKey(true);
+    }
+  };
 
   const toggleLanguage = () => {
     const nextLang = lang === Language.EN ? Language.HI : Language.EN;
     setLang(nextLang);
-    
     const greeting: ChatMessage = {
       role: 'model',
       text: TRANSLATIONS[nextLang].langSwitchGreeting
@@ -71,6 +101,17 @@ const App: React.FC = () => {
 
         <div className="mt-auto space-y-4">
           <button 
+            onClick={handleOpenKeySelector}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${!hasKey ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
+          >
+            <div className="flex items-center gap-2">
+              <Lock size={14} className="opacity-50" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">{!hasKey ? 'Key Required' : 'System Locked'}</span>
+            </div>
+            <Key size={16} />
+          </button>
+          
+          <button 
             onClick={toggleLanguage}
             className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all border border-transparent hover:border-teal-100"
           >
@@ -99,15 +140,11 @@ const App: React.FC = () => {
           <h1 className="font-bold text-slate-800">MedCenter</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={toggleLanguage}
-            className="p-2 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-xl transition-colors"
-          >
-            <Languages size={20} />
+          <button onClick={handleOpenKeySelector} className={`p-2 rounded-xl ${!hasKey ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+            <Key size={20} />
           </button>
-          <button className="p-2 text-slate-600">
-            <Menu size={20} />
-          </button>
+          <button onClick={toggleLanguage} className="p-2 text-teal-600 bg-teal-50 rounded-xl"><Languages size={20} /></button>
+          <button className="p-2 text-slate-600"><Menu size={20} /></button>
         </div>
       </header>
 
