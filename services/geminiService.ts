@@ -1,11 +1,14 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MedicineDetails, Language } from "../types";
 
-export interface ServiceResponse {
-  data: MedicineDetails | null;
-  error?: string;
-  isKeyError?: boolean;
-}
+// Safety helper to get API Key
+const getApiKey = () => {
+  try {
+    return (window as any).process?.env?.API_KEY || (process as any)?.env?.API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
 
 const cleanJsonResponse = (text: string): string => {
   let cleaned = text.trim();
@@ -13,19 +16,18 @@ const cleanJsonResponse = (text: string): string => {
   return cleaned;
 };
 
-export const getMedicineDetails = async (name: string, lang: Language): Promise<ServiceResponse> => {
-  const apiKey = process.env.API_KEY;
+export const getMedicineDetails = async (name: string, lang: Language): Promise<{ data: MedicineDetails | null; error?: string; isKeyError?: boolean }> => {
+  const apiKey = getApiKey();
   
-  if (!apiKey || apiKey === 'undefined') {
-    return { data: null, error: "API Key not selected. Please click the key icon to select a key.", isKeyError: true };
+  if (!apiKey) {
+    return { data: null, error: "API Key not found. Please select a key using the icon.", isKeyError: true };
   }
 
   try {
-    // Create instance right before call as per guidelines
     const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Pharmacologist report for: "${name}". Language: ${lang === Language.HI ? 'Hindi' : 'English'}. Return valid JSON: {name, use, dosage, sideEffects, composition}.`,
+      contents: `Report for medicine: "${name}". Lang: ${lang === Language.HI ? 'Hindi' : 'English'}. Return JSON: {name, use, dosage, sideEffects, composition}.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -43,30 +45,22 @@ export const getMedicineDetails = async (name: string, lang: Language): Promise<
     });
 
     const text = response.text;
-    if (!text) return { data: null, error: "Empty response from AI." };
+    if (!text) return { data: null, error: "Empty response." };
     
     const cleaned = cleanJsonResponse(text);
-    const parsed = JSON.parse(cleaned) as MedicineDetails;
-    return { data: parsed };
+    return { data: JSON.parse(cleaned) as MedicineDetails };
   } catch (error: any) {
-    console.error("Clinical Search Error:", error);
     const msg = error.message || "";
-    // FIX: Included "Requested entity was not found." to trigger key selection reset as per guidelines
-    const isLeaked = msg.includes("leaked") || msg.includes("403") || msg.includes("PERMISSION_DENIED") || msg.includes("Requested entity was not found.");
-    return { 
-      data: null, 
-      error: isLeaked ? "API Key has been revoked, leaked, or not found. Please select a new valid key." : msg,
-      isKeyError: isLeaked
-    };
+    const isKeyError = msg.includes("403") || msg.includes("PERMISSION_DENIED") || msg.includes("not found");
+    return { data: null, error: msg, isKeyError };
   }
 };
 
 export const getHealthAssistantResponse = async (query: string, history: {role: string, text: string}[], lang: Language) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API Key error. Please select a key.";
+  const apiKey = getApiKey();
+  if (!apiKey) return "API Key error.";
 
   try {
-    // Create instance right before call as per guidelines
     const ai = new GoogleGenAI({ apiKey });
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -75,11 +69,11 @@ export const getHealthAssistantResponse = async (query: string, history: {role: 
         { role: 'user', parts: [{ text: query }] }
       ],
       config: {
-        systemInstruction: `Senior Consultant mode. Language: ${lang === Language.HI ? 'Hindi' : 'English'}.`,
+        systemInstruction: `Senior Consultant mode. Lang: ${lang === Language.HI ? 'Hindi' : 'English'}.`,
         thinkingConfig: { thinkingBudget: 1000 }
       }
     });
-    return response.text || "Error generating response.";
+    return response.text || "Error.";
   } catch (error: any) {
     return `System Error: ${error.message}`;
   }
